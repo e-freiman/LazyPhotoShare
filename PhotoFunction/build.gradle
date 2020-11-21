@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Gson
+    compile 'com.google.code.gson:gson:2.7'
+
+    // Guice
+    compile 'com.google.inject:guice:4.0'
+
+    // JUnit
+    testImplementation 'junit:junit:4.13.1'
+
+    // Mockito
+    testCompile 'org.mockito:mockito-all:2.0.2-beta'
+
+    // AWS
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.+')
+    implementation 'com.amazonaws:aws-java-sdk-secretsmanager'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.0'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.1.0'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.16'
+    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    testCompileOnly 'org.projectlombok:lombok:1.18.16'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.16'
+
+    // GooglePhoto
+    compile 'com.google.auth:google-auth-library-oauth2-http:0.22.0'
+    compile 'com.google.photos.library:google-photos-library-client:1.6.0'
+    compile 'com.google.api-client:google-api-client:1.30.4'
+}
