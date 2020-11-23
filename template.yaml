@@ -19,12 +19,28 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
-          REGION: ca-central-1
+          AWS_ACCOUNT_ID: { Ref: "AWS::AccountId" }
+      Events:
+        SendRandomPhoto:
+          Type: Schedule
+          Properties:
+            Schedule: rate(12 hours)
       Policies:
         - Statement:
             Effect: Allow
             Action:
                 - secretsmanager:GetSecretValue
+            Resource: '*'
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
             Resource: '*'
 
   GooglePhotoSecret:
@@ -32,3 +48,23 @@ Resources:
     Properties:
       Name: GooglePhotoSecret
       SecretString: '{"clientId":"","clientSecret":"", "accessToken":"", "refreshToken":""}'
+
+  TelegramSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: TelegramSecret
+      SecretString: '{"token":""}'
+
+  ChatsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ChatsTable
+      AttributeDefinitions:
+        - AttributeName: chat_id
+          AttributeType: N
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
