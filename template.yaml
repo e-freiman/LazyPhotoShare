@@ -25,6 +25,12 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: rate(12 hours)
+            Input: "{\"resource\":\"/more\",\"path\":\"/more\",\"httpMethod\":\"POST\",\"requestContext\":{\"accountId\":\"641246385999\",\"stage\":\"test-invoke-stage\",\"resourceId\":\"1pc3cp\",\"requestId\":\"8a290575-6638-40f1-82a1-15b255d757ce\",\"identity\":{\"accountId\":\"641246385999\",\"caller\":\"641246385999\",\"apiKey\":\"test-invoke-api-key\",\"sourceIp\":\"test-invoke-source-ip\",\"userArn\":\"arn:aws:iam::641246385999:root\",\"userAgent\":\"aws-internal/3 aws-sdk-java/1.11.864 Linux/4.9.217-0.3.ac.206.84.332.metal1.x86_64 OpenJDK_64-Bit_Server_VM/25.262-b10 java/1.8.0_262 vendor/Oracle_Corporation\",\"user\":\"641246385999\",\"accessKey\":\"ASIAZKTKDK5H7SO6M77F\"},\"resourcePath\":\"/more\",\"httpMethod\":\"POST\",\"apiId\":\"sc6iz53gbk\",\"path\":\"/more\"},\"isBase64Encoded\":false}"
+        HttpPost:
+          Type: Api
+          Properties:
+            Path: /more
+            Method: POST
       Policies:
         - Statement:
             Effect: Allow
@@ -68,3 +74,8 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL for Prod stage for Photo function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/more/"

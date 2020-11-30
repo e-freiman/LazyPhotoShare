@@ -2,6 +2,7 @@ package service;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.photos.types.proto.Album;
@@ -22,6 +23,7 @@ import service.telegram.TelegramSecret;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
@@ -46,11 +48,13 @@ public class ServiceTest {
     @Mock
     private DBProxy dbProxy;
 
+    private Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
     private Service service;
 
     @Before
     public void setUp() throws IOException {
-        service = new Service(googlePhotoProxy, telegramProxy, dbProxy);
+        service = new Service(googlePhotoProxy, telegramProxy, dbProxy, gson);
     }
 
     @Test
@@ -62,12 +66,12 @@ public class ServiceTest {
                 .setMimeType(MIME_TYPE)
                 .setBaseUrl(IMAGE_BASE_URL).build();
 
-        when(telegramProxy.getChats(any())).thenReturn(Collections.singleton(CHAT_ID));
+        when(telegramProxy.getChat(any(), any())).thenReturn(Optional.of(CHAT_ID));
         when(googlePhotoProxy.getAlbums(any())).thenReturn(Collections.singletonList(album));
         when(googlePhotoProxy.getMediaItems(album)).thenReturn(Collections.singletonList(mediaItem));
         when(dbProxy.scan()).thenReturn(Collections.singletonList(new Chat(CHAT_ID)));
 
-        service.serve(mock(Context.class), mock(LambdaLogger.class));
+        service.serve(new APIGatewayProxyRequestEvent(), mock(Context.class), mock(LambdaLogger.class));
 
         verify(dbProxy).put(new Chat(CHAT_ID));
         verify(telegramProxy).sendPhoto(any(), eq(CHAT_ID), eq(ALBUM_TITLE.substring(1)), eq(IMAGE_BASE_URL));

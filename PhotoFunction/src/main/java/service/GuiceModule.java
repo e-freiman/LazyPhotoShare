@@ -23,7 +23,7 @@ public class GuiceModule extends AbstractModule {
 
     @Provides
     public TelegramProxy telegramProxy() {
-        return new TelegramProxy(secretRetriever.telegramSecret());
+        return new TelegramProxy(secretRetriever.telegramSecret(), gson);
     }
 
     @Provides

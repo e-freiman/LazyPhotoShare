@@ -2,6 +2,10 @@ package service;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.internal.$Gson$Preconditions;
 import com.google.photos.types.proto.Album;
 import com.google.photos.types.proto.MediaItem;
 import service.database.Chat;
@@ -13,6 +17,7 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
@@ -24,25 +29,34 @@ public class Service {
     private final TelegramProxy telegramProxy;
     private final DBProxy DBProxy;
     private final Random random = new Random();
+    private final Gson gson;
 
     @Inject
     public Service(final GooglePhotoProxy googlePhotoProxy,
                    final TelegramProxy telegramProxy,
-                   final DBProxy DBProxy) {
+                   final DBProxy DBProxy,
+                   final Gson gson) {
         this.googlePhotoProxy = googlePhotoProxy;
         this.telegramProxy = telegramProxy;
         this.DBProxy = DBProxy;
+        this.gson = gson;
     }
 
-    public void serve(final Context context, final LambdaLogger logger) throws IOException {
-        // Read recent messages.
-        Set<Long> recentChats = telegramProxy.getChats(logger);
+    public void serve(APIGatewayProxyRequestEvent event, final Context context, final LambdaLogger logger) throws IOException {
 
-        // Update the database.
-        recentChats.stream().forEach(chatId -> {
-            DBProxy.put(new Chat(chatId));
-            logger.log(String.format("Chat %d added to database", chatId));
-        });
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        logger.log(String.format("Event: %s", gson.toJson(event)));
+
+        // Read recent messages.
+        Optional<Long> chatId = telegramProxy.getChat(logger, event.getBody());
+
+        if (chatId.isPresent()) {
+            // Update the database.
+            DBProxy.put(new Chat(chatId.get()));
+            logger.log(String.format("Chat %d added to database", chatId.get()));
+        } else {
+            logger.log(String.format("ChatId isn't found in the request"));
+        }
 
         // Retrieve a photo.
         List<Album> albums = googlePhotoProxy.getAlbums(ALBUM_PREFIX);
@@ -77,10 +91,16 @@ public class Service {
         // Retrieve a list of all the chats.
         List<Chat> chats = DBProxy.scan();
 
-        // Send photo to all the chats.
-        for (Chat chat : chats) {
-            telegramProxy.sendPhoto(logger, chat.getChatId(), albumTitle, item.getBaseUrl());
-            logger.log(String.format("Photo sent to %d chat", chat.getChatId()));
-        };
+        if (chatId.isPresent()) {
+            // Send photo to the requester.
+            telegramProxy.sendPhoto(logger, chatId.get(), albumTitle, item.getBaseUrl());
+            logger.log(String.format("Photo sent to %d chat", chatId.get()));
+        } else {
+            // Send photo to all the chats.
+            for (Chat chat : chats) {
+                telegramProxy.sendPhoto(logger, chat.getChatId(), albumTitle, item.getBaseUrl());
+                logger.log(String.format("Photo sent to %d chat", chat.getChatId()));
+            }
+        }
     }
 }
